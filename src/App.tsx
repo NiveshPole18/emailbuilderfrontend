@@ -35,14 +35,14 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<Layout />}>
-                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/" element={<Navigate to="/register" replace />} />
                   <Route path="/templates" element={<TemplatesPage />} />
                   <Route path="/templates/new" element={<EmailEditor />} />
                   <Route path="/templates/:id" element={<TemplateDetailPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
               </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/register" replace />} />
             </Routes>
           </Router>
         </AuthProvider>
