@@ -18,7 +18,7 @@ export default function Login() {
     try {
       await login(email, password)
       startTransition(() => {
-        navigate("/")
+        navigate("/dashboard")
       })
     } catch (error) {
       console.error("Login failed:", error)

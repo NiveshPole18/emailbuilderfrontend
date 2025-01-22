@@ -17,7 +17,7 @@ export default function Register() {
     setIsLoading(true)
     try {
       await signUp(name, email, password) // Corrected the function name to match the context
-      navigate("/")
+      navigate("/dashboard") // Redirect to Dashboard after registration
     } catch (error) {
       console.error("Registration failed:", error)
     } finally {
