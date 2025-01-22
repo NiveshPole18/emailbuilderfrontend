@@ -2,7 +2,7 @@ import axios from "axios"
 import { toast } from "react-hot-toast"
 
 export const api = axios.create({
-  baseURL: "https://emailbuilderbackend.onrender.com/api",
+  baseURL: "https://emailbuilderbackend-1.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
