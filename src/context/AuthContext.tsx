@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { api } from "../utils/api.ts"
 
 interface User {
@@ -17,22 +17,43 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user] = useState<User | null>({ name: 'Test User', email: 'test@example.com' });
-  const [isLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // Optionally fetch user data with the token
+      api.get("/me", { headers: { Authorization: `Bearer ${token}` } })
+        .then(response => {
+          setUser(response.data);
+        })
+        .catch(() => {
+          setUser(null);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
 
   const logout = () => {
-    // TODO: Implement actual logout
+    localStorage.removeItem("token");
+    setUser(null);
   };
 
   const signUp = async (name: string, email: string, password: string) => {
-    // TODO: Implement actual signup
-    console.log('Signup:', { name, email, password });
+    const response = await api.post("/register", { name, email, password });
+    localStorage.setItem("token", response.data.token);
+    setUser({ name, email });
   };
 
   const login = async (email: string, password: string) => {
     const response = await api.post("/login", { email, password });
-    localStorage.setItem("token", response.data.token); // Store the token
-    // Set user state or any other necessary state
+    localStorage.setItem("token", response.data.token);
+    setUser({ name: response.data.name, email }); // Assuming the response contains the user's name
   };
 
   return (
