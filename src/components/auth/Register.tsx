@@ -16,10 +16,11 @@ export default function Register() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await signUp(name, email, password) // Corrected the function name to match the context
+      await signUp(name, email, password) // Ensure this is called correctly
       navigate("/dashboard") // Redirect to Dashboard after registration
     } catch (error) {
-      console.error("Registration failed:", error)
+      console.error("Registration failed:", error) // Log the error
+      alert("Registration failed. Please try again.") // Notify the user
     } finally {
       setIsLoading(false)
     }

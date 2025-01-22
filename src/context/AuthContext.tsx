@@ -45,9 +45,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signUp = async (name: string, email: string, password: string) => {
-    const response = await api.post("/register", { name, email, password });
-    localStorage.setItem("token", response.data.token);
-    setUser({ name, email });
+    try {
+      const response = await api.post("/register", { name, email, password });
+      localStorage.setItem("token", response.data.token);
+      setUser({ name, email });
+    } catch (error) {
+      console.error("Signup failed:", error);
+      throw error;
+    }
   };
 
   const login = async (email: string, password: string) => {
