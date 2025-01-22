@@ -35,7 +35,8 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<Layout />}>
-                  <Route path="/" element={<Navigate to="/register" replace />} />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/templates" element={<TemplatesPage />} />
                   <Route path="/templates/new" element={<EmailEditor />} />
                   <Route path="/templates/:id" element={<TemplateDetailPage />} />
