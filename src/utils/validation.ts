@@ -43,4 +43,24 @@ export const validateEmail = (email: string): boolean => {
     return errors
   }
   
+  export const validateSignup = (name: string, email: string, password: string) => {
+    const errors: string[] = [];
+  
+    if (!name) {
+      errors.push("Name is required.");
+    }
+    if (!email) {
+      errors.push("Email is required.");
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.push("Email is invalid.");
+    }
+    if (!password) {
+      errors.push("Password is required.");
+    } else if (password.length < 6) {
+      errors.push("Password must be at least 6 characters long.");
+    }
+  
+    return errors;
+  }
+  
   
