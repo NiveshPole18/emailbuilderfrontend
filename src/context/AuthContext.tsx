@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, type ReactNode, useEffect } from "react"
+import type React from "react"
+import { createContext, useContext, useState, type ReactNode, useEffect } from "react"
+import { toast } from "react-hot-toast"
 import { api } from "../utils/api.ts"
 import { validateSignup } from "../utils/validation.ts"
 
@@ -27,13 +29,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const token = localStorage.getItem("token")
       if (token) {
         try {
-          // Update the endpoint to match the backend
           const response = await api.get("/auth/me")
           setUser(response.data)
-        } catch (error) {
+        } catch (error: any) {
           console.error("Auth check failed:", error)
-          localStorage.removeItem("token")
-          setUser(null)
+          // Only remove token if it's actually invalid, not for network errors
+          if (error.response?.status === 401) {
+            localStorage.removeItem("token")
+            setUser(null)
+          }
         }
       }
       setIsLoading(false)
@@ -54,7 +58,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
-      // Update the endpoint to match the backend
       const response = await api.post("/auth/register", {
         name,
         email,
@@ -64,16 +67,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { token, user: userData } = response.data
       localStorage.setItem("token", token)
       setUser(userData)
+      toast.success("Registration successful!")
     } catch (error: any) {
       console.error("Signup failed:", error)
-      const message = error.response?.data?.message || "Signup failed"
-      throw new Error(message)
+
+      // Handle different types of errors
+      if (!error.response) {
+        throw new Error("Network error. Please check your connection.")
+      }
+
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || "Invalid registration data")
+      }
+
+      throw new Error(error.response?.data?.message || "Registration failed")
     }
   }
 
   const login = async (email: string, password: string) => {
     try {
-      // Update the endpoint to match the backend
       const response = await api.post("/auth/login", {
         email,
         password,
@@ -82,10 +94,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { token, user: userData } = response.data
       localStorage.setItem("token", token)
       setUser(userData)
+      toast.success("Login successful!")
     } catch (error: any) {
       console.error("Login failed:", error)
-      const message = error.response?.data?.message || "Login failed"
-      throw new Error(message)
+
+      // Handle different types of errors
+      if (!error.response) {
+        throw new Error("Network error. Please check your connection.")
+      }
+
+      if (error.response?.status === 401) {
+        throw new Error("Invalid email or password")
+      }
+
+      throw new Error(error.response?.data?.message || "Login failed")
     }
   }
 
