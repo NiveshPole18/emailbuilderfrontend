@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "react-query"
-import { api } from "../utils/api.ts"
+import { api } from "../utils/api"
 import { toast } from "react-hot-toast"
 
-export interface Template {
+interface Template {
   _id: string
   name: string
   createdAt: string
   userId: string
-  layout: string
   config: {
     title: string
     content: string
@@ -22,9 +21,7 @@ export interface Template {
   }
 }
 
-export type CreateTemplateInput = Omit<Template, "_id" | "createdAt" | "userId"> & {
-  layout: string
-}
+export type CreateTemplateInput = Omit<Template, "_id" | "createdAt" | "userId">
 
 export function useEmailTemplate() {
   const queryClient = useQueryClient()
@@ -32,19 +29,20 @@ export function useEmailTemplate() {
   const { data: templates, isLoading: isTemplatesLoading } = useQuery<Template[]>(
     "templates",
     async () => {
-      const response = await api.get("/templates")
+      const response = await api.get("/email/templates")
       return response.data
     },
     {
       onError: (error: any) => {
+        console.error("Failed to fetch templates:", error)
         toast.error(error.response?.data?.message || "Failed to fetch templates")
       },
     },
   )
 
   const { mutateAsync: saveTemplate, isLoading: isSaving } = useMutation(
-    async (template: CreateTemplateInput) => {
-      const response = await api.post("/template", template)
+    async (template: Omit<CreateTemplateInput, "layout">) => {
+      const response = await api.post("/email/template", template)
       return response.data
     },
     {
@@ -53,8 +51,19 @@ export function useEmailTemplate() {
         queryClient.invalidateQueries("templates")
       },
       onError: (error: any) => {
+        console.error("Failed to save template:", error)
         const message = error.response?.data?.message || "Failed to save template"
-        toast.error(message)
+        const details = error.response?.data?.details
+
+        if (details) {
+          Object.values(details).forEach((detail) => {
+            if (detail) toast.error(detail as string)
+          })
+        } else {
+          toast.error(message)
+        }
+
+        throw error
       },
     },
   )
@@ -70,6 +79,7 @@ export function useEmailTemplate() {
         queryClient.invalidateQueries("templates")
       },
       onError: (error: any) => {
+        console.error("Failed to delete template:", error)
         toast.error(error.response?.data?.message || "Failed to delete template")
       },
     },
