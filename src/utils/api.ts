@@ -33,26 +33,43 @@ api.interceptors.response.use(
     // Handle network errors
     if (!error.response) {
       console.error("Network error:", error)
-      toast.error("Network error. Please check your connection.")
-      return Promise.reject(new Error("Network error"))
+      toast.error("Network error. Please check your connection and try again.")
+      return Promise.reject(error)
     }
 
-    // Handle 404 errors
-    if (error.response.status === 404) {
-      console.error("Resource not found:", error.config.url)
-      toast.error(`Resource not found: ${error.config.url}`)
+    // Handle CORS errors
+    if (error.response.status === 0) {
+      console.error("CORS error:", error)
+      toast.error("Unable to connect to the server. Please try again later.")
+      return Promise.reject(error)
     }
 
     // Handle authentication errors
     if (error.response.status === 401) {
       console.error("Authentication error:", error)
-      localStorage.removeItem("token")
-      window.location.href = "/login"
+
+      // Only redirect to login if token exists and is invalid
+      if (localStorage.getItem("token")) {
+        localStorage.removeItem("token")
+        window.location.href = "/login"
+      }
+
+      return Promise.reject(error)
     }
 
-    // Handle other errors
-    const message = error.response?.data?.message || "An error occurred"
-    toast.error(message)
+    // Handle server errors
+    if (error.response.status >= 500) {
+      console.error("Server error:", error)
+      toast.error("Server error. Please try again later.")
+      return Promise.reject(error)
+    }
+
+    // Handle validation errors
+    if (error.response.status === 400) {
+      const message = error.response.data.message || "Validation error"
+      toast.error(message)
+      return Promise.reject(error)
+    }
 
     return Promise.reject(error)
   },
