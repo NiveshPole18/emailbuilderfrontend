@@ -29,7 +29,7 @@ export function useEmailTemplate() {
   const { data: templates, isLoading: isTemplatesLoading } = useQuery<Template[]>(
     "templates",
     async () => {
-      const response = await api.get("/email/templates")
+      const response = await api.get("/templates")
       return response.data
     },
     {
@@ -42,7 +42,7 @@ export function useEmailTemplate() {
 
   const { mutateAsync: saveTemplate, isLoading: isSaving } = useMutation(
     async (template: CreateTemplateInput) => {
-      const response = await api.post("/email/template", template)
+      const response = await api.post("/template", template)
       return response.data
     },
     {
@@ -60,7 +60,7 @@ export function useEmailTemplate() {
   const downloadTemplate = async (templateId: string) => {
     try {
       // Use the correct endpoint
-      const response = await api.get(`/email/template/${templateId}/render`, {
+      const response = await api.get(`/template/${templateId}/render`, {
         responseType: "blob",
         headers: {
           Accept: "text/html",
