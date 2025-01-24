@@ -41,8 +41,25 @@ export function useEmailTemplate() {
   )
 
   const { mutateAsync: saveTemplate, isLoading: isSaving } = useMutation(
-    async (template: Omit<CreateTemplateInput, "layout">) => {
-      const response = await api.post("/email/template", template)
+    async (template: CreateTemplateInput) => {
+      // Ensure all required fields are present and properly formatted
+      const payload = {
+        name: template.name.trim(),
+        config: {
+          title: template.config.title.trim(),
+          content: template.config.content.trim(),
+          imageUrl: template.config.imageUrl || "",
+          footer: template.config.footer || "",
+          styles: {
+            titleColor: template.config.styles.titleColor || "#000000",
+            contentColor: template.config.styles.contentColor || "#333333",
+            backgroundColor: template.config.styles.backgroundColor || "#ffffff",
+            fontSize: template.config.styles.fontSize || "16px",
+          },
+        },
+      }
+
+      const response = await api.post("/email/template", payload)
       return response.data
     },
     {
@@ -68,30 +85,11 @@ export function useEmailTemplate() {
     },
   )
 
-  const { mutateAsync: deleteTemplate, isLoading: isDeleting } = useMutation(
-    async (templateId: string) => {
-      const response = await api.delete(`/email/template/${templateId}`)
-      return response.data
-    },
-    {
-      onSuccess: () => {
-        toast.success("Template deleted successfully")
-        queryClient.invalidateQueries("templates")
-      },
-      onError: (error: any) => {
-        console.error("Failed to delete template:", error)
-        toast.error(error.response?.data?.message || "Failed to delete template")
-      },
-    },
-  )
-
   return {
     templates,
     isTemplatesLoading,
     saveTemplate,
     isSaving,
-    deleteTemplate,
-    isDeleting,
   }
 }
 
