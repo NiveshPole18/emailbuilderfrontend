@@ -19,7 +19,7 @@ export function useImageUpload() {
       formData.append("image", file)
 
       // Use the correct endpoint
-      const response = await api.post("/email/upload-image", formData, {
+      const response = await api.post("/upload-image", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
