@@ -1,18 +1,20 @@
-import React, { useState, ChangeEvent } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-hot-toast"
-import { useEmailTemplate } from "../../hooks/useEmailTemplate.ts"
-import { useImageUpload } from "../../hooks/useImageUpload.ts"
-import { Button } from "../ui/Button.tsx"
-import { Input } from "../ui/Input.tsx"
-import { Textarea } from "../ui/Textarea.tsx"
-import ColorPicker from "./ColorPicker.tsx"
-import Preview from "./Preview.tsx"
+import { useEmailTemplate } from "../../hooks/useEmailTemplate"
+import { useImageUpload } from "../../hooks/useImageUpload"
+import ColorPicker from "./ColorPicker"
+import Preview from "./Preview"
+import LoadingState from "../LoadingState"
+import { Button } from "../ui/Button"
+import { Input } from "../ui/Input"
+import { Textarea } from "../ui/Textarea"
 
 export default function EmailEditor() {
   const navigate = useNavigate()
   const { saveTemplate, isSaving } = useEmailTemplate()
   const { uploadImage, isLoading: isUploading } = useImageUpload()
+  const [isSaveAttempted, setIsSaveAttempted] = useState(false)
 
   const [name, setName] = useState("Untitled Template")
   const [config, setConfig] = useState({
@@ -28,14 +30,7 @@ export default function EmailEditor() {
     },
   })
 
-  const sections = [
-    { id: "title", label: "Email Title", type: "text" },
-    { id: "content", label: "Email Content", type: "textarea" },
-    { id: "image", label: "Header Image", type: "image" },
-    { id: "footer", label: "Footer Text", type: "text" },
-  ]
-
-  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -44,105 +39,142 @@ export default function EmailEditor() {
       setConfig({ ...config, imageUrl })
       toast.success("Image uploaded successfully")
     } catch (error) {
-      toast.error("Failed to upload image")
+      // Error handling is done in the hook
+      console.error("Upload failed:", error)
     }
   }
 
+  const validateForm = () => {
+    const errors: string[] = []
+
+    if (!name.trim()) errors.push("Template name is required")
+    if (!config.title.trim()) errors.push("Email title is required")
+    if (!config.content.trim()) errors.push("Email content is required")
+
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error))
+      return false
+    }
+
+    return true
+  }
+
   const handleSave = async () => {
-    if (isSaving) return; // Prevent double submission
+    setIsSaveAttempted(true)
+
+    if (!validateForm()) {
+      return
+    }
 
     try {
       await saveTemplate({
         name,
         config,
-        layout: "default-layout",
-      });
-      navigate("/templates"); // Navigate after successful save
+      })
+      navigate("/templates")
     } catch (error) {
-      console.error('Save failed:', error);
+      console.error("Save failed:", error)
+      // Error handling is done in the hook
     }
+  }
+
+  if (isSaving) {
+    return <LoadingState />
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="md:flex md:items-center md:justify-between">
           <div className="flex-1 min-w-0">
             <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="text-2xl font-bold text-gray-900 sm:text-3xl sm:truncate"
+              className={`text-2xl font-bold text-gray-900 sm:text-3xl sm:truncate ${
+                isSaveAttempted && !name.trim() ? "border-red-500" : ""
+              }`}
               placeholder="Template Name"
             />
           </div>
           <div className="mt-4 flex md:mt-0 md:ml-4">
-            <Button variant="outline" className="ml-3" onClick={() => navigate("/templates")}>
+            <Button variant="outline" onClick={() => navigate("/templates")} className="mr-2">
               Cancel
             </Button>
-            <Button onClick={handleSave} className="ml-3" disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? "Saving..." : "Save Template"}
             </Button>
           </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Editor Panel */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-6">Email Content</h2>
 
             <div className="space-y-6">
-              {sections.map((section) => (
-                <div key={section.id} className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">{section.label}</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email Title</label>
+                <Input
+                  type="text"
+                  value={config.title}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      title: e.target.value,
+                    })
+                  }
+                  className={`mt-1 ${isSaveAttempted && !config.title.trim() ? "border-red-500" : ""}`}
+                />
+              </div>
 
-                  {section.type === "image" ? (
-                    <div className="mt-1 flex items-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="block w-full text-sm text-gray-500
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-md file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-primary-50 file:text-primary-700
-                          hover:file:bg-primary-100"
-                        disabled={isUploading}
-                      />
-                    </div>
-                  ) : section.type === "textarea" ? (
-                    <Textarea
-                      value={config[section.id as keyof typeof config] as string}
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          [section.id]: e.target.value,
-                        })
-                      }
-                      rows={6}
-                      className="mt-1"
-                      placeholder={`Enter ${section.label.toLowerCase()}`}
-                    />
-                  ) : (
-                    <Input
-                      type="text"
-                      value={config[section.id as keyof typeof config] as string}
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          [section.id]: e.target.value,
-                        })
-                      }
-                      className="mt-1"
-                      placeholder={`Enter ${section.label.toLowerCase()}`}
-                    />
-                  )}
-                </div>
-              ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email Content</label>
+                <Textarea
+                  value={config.content}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      content: e.target.value,
+                    })
+                  }
+                  rows={6}
+                  className={`mt-1 ${isSaveAttempted && !config.content.trim() ? "border-red-500" : ""}`}
+                />
+              </div>
 
-              <div className="border-t pt-6 mt-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Header Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="mt-1 block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-md file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-primary-50 file:text-primary-700
+                    hover:file:bg-primary-100"
+                  disabled={isUploading}
+                />
+                {isUploading && <span className="mt-2 text-sm text-gray-500">Uploading...</span>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Footer Text</label>
+                <Input
+                  type="text"
+                  value={config.footer}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      footer: e.target.value,
+                    })
+                  }
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="border-t pt-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Styling</h3>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <ColorPicker
@@ -176,7 +208,7 @@ export default function EmailEditor() {
                     }
                   />
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Font Size</label>
+                    <label className="block text-sm font-medium text-gray-700">Font Size</label>
                     <select
                       value={config.styles.fontSize}
                       onChange={(e) =>
@@ -197,7 +229,6 @@ export default function EmailEditor() {
             </div>
           </div>
 
-          {/* Preview Panel */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-6">Preview</h2>
             <Preview config={config} />
@@ -207,3 +238,4 @@ export default function EmailEditor() {
     </div>
   )
 }
+
