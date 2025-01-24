@@ -42,24 +42,7 @@ export function useEmailTemplate() {
 
   const { mutateAsync: saveTemplate, isLoading: isSaving } = useMutation(
     async (template: CreateTemplateInput) => {
-      // Ensure all required fields are present and properly formatted
-      const payload = {
-        name: template.name.trim(),
-        config: {
-          title: template.config.title.trim(),
-          content: template.config.content.trim(),
-          imageUrl: template.config.imageUrl || "",
-          footer: template.config.footer || "",
-          styles: {
-            titleColor: template.config.styles.titleColor || "#000000",
-            contentColor: template.config.styles.contentColor || "#333333",
-            backgroundColor: template.config.styles.backgroundColor || "#ffffff",
-            fontSize: template.config.styles.fontSize || "16px",
-          },
-        },
-      }
-
-      const response = await api.post("/email/template", payload)
+      const response = await api.post("/email/template", template)
       return response.data
     },
     {
@@ -69,27 +52,44 @@ export function useEmailTemplate() {
       },
       onError: (error: any) => {
         console.error("Failed to save template:", error)
-        const message = error.response?.data?.message || "Failed to save template"
-        const details = error.response?.data?.details
-
-        if (details) {
-          Object.values(details).forEach((detail) => {
-            if (detail) toast.error(detail as string)
-          })
-        } else {
-          toast.error(message)
-        }
-
-        throw error
+        toast.error(error.response?.data?.message || "Failed to save template")
       },
     },
   )
+
+  const downloadTemplate = async (templateId: string) => {
+    try {
+      const response = await api.get(`/email/template/${templateId}/render`, {
+        responseType: "blob",
+      })
+
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement("a")
+      link.href = url
+      link.setAttribute("download", `template-${templateId}.html`)
+
+      // Append to html link element page
+      document.body.appendChild(link)
+
+      // Start download
+      link.click()
+
+      // Clean up and remove the link
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error: any) {
+      console.error("Error downloading template:", error)
+      toast.error("Failed to download template")
+    }
+  }
 
   return {
     templates,
     isTemplatesLoading,
     saveTemplate,
     isSaving,
+    downloadTemplate,
   }
 }
 
